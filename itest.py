@@ -13,8 +13,7 @@ applications = map(str,applications)
 departments = np.unique(worksheet["Group"].values).tolist()
 departments = map(str,departments)
 data_centers = np.unique(worksheet["Site"].values).tolist()
-data_centers = map(str,data_centers
-)
+data_centers = map(str,data_centers)
 apps_per_department={}
 cpu_and_ram_per_department={}
 cpu_and_ram_per_application={}
