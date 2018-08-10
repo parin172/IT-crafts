@@ -36,13 +36,12 @@ instance_prices_per_hour = {0:0.0058, 1:0.0116, 2:0.023, 4:0.0464, 8:0.0928, 16:
 
 def hosting_cost_per_department():
   for group in departments:
-    print "group is: "+group
     hosting_cost = {}
     yearly_hosting_cost = []
     group_worksheet = (worksheet[worksheet["Group"]==group])
     ram_sizes_in_gig = ((group_worksheet["RAM (MB)"].values)/1024).tolist()
     ram_counter = dict(collections.Counter(ram_sizes_in_gig))
-    print ram_counter
+#    print ram_counter
 
     if ( group == "Engineering" ) or (group == "Engineering Canada" ):
       for growth in Engineering_Hardware_Growth:
@@ -122,7 +121,7 @@ def usage():
   -c: calculates the number of CPUs and memory used by each department.
   -r: calculates the number of CPUs and memory used by each application.
   -d: calculates the number of CPUs and memory used by each data center.
-  -h: calculates hardware growth and decrease in partiular departments for upcoming years."""%sys.argv[0])
+  -h: calculates hardware hosting cost per department over the course of 3 years.."""%sys.argv[0])
   sys.exit(2)
 
 try:
