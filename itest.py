@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import json
 import sys, getopt
 import collections
 
@@ -13,7 +12,7 @@ OBTAIN_APPS_PER_DEPARTMENT = 'false'
 OBTAIN_CPU_RAM_PER_DEPARTMENT = 'false'
 OBTAIN_CPU_RAM_PER_APPLICATION = 'false'
 OBTAIN_CPU_RAM_PER_DATACENTER = 'false'
-OBTAIN_HARDWARE_GROWTH_AND_DECREASE = 'false'
+OBTAIN_HOSTING_COST_PER_DEPARTMENT = 'false'
 
 pd.set_option('display.max_rows', 500)
 worksheet = pd.read_excel("hardware.xlsx")
@@ -27,53 +26,52 @@ cpu_num_of_cores = np.unique(worksheet["CPU cores"].values).tolist()
 #ram_sizes_in_gig = ((worksheet["RAM (MB)"].values)/1024).tolist()
 #unique_ram_sizes_in_gig = ((np.unique(worksheet["RAM (MB)"].values))/1024).tolist()
 Engineering_Hardware_Growth = [10, 25, 40]
-Sales_Hardware_Decrease = [80, 100]
-Change_in_Hardware_Engineering = ["Engineering", "Engineering Canada"] 
-Change_in_Hardware_Sales = "Sales"
+Sales_Hardware_Decrease = [80, 100, 0]
+Change_in_Hardware_Requirements = ["Engineering", "Engineering Canada", "Sales"] 
 #hosting_cost = {}
 #yearly_hosting_cost = []
+cost_for_department_over_years = {}
 
 instance_prices_per_hour = {0:0.0058, 1:0.0116, 2:0.023, 4:0.0464, 8:0.0928, 16:0.192, 24:0.384, 32:0.384, 64:0.768}
-#ram_counter = dict(collections.Counter(ram_sizes_in_gig))
-#print ram_counter
 
-#for growth in Engineering_Hardware_Growth:
-#  for key in ram_counter.keys():
-#    ram_counter.update({key:(ram_counter[key]+ram_counter[key]*(float(growth)/100))})
-#  print ram_counter
+def hosting_cost_per_department():
+  for group in departments:
+    print "group is: "+group
+    hosting_cost = {}
+    yearly_hosting_cost = []
+    group_worksheet = (worksheet[worksheet["Group"]==group])
+    ram_sizes_in_gig = ((group_worksheet["RAM (MB)"].values)/1024).tolist()
+    ram_counter = dict(collections.Counter(ram_sizes_in_gig))
+    print ram_counter
 
-for group in Change_in_Hardware_Engineering:
-  hosting_cost = {}
-  yearly_hosting_cost = []
-  group_worksheet = (worksheet[worksheet["Group"]==group])
-  ram_sizes_in_gig = ((group_worksheet["RAM (MB)"].values)/1024).tolist()
-  #unique_ram_sizes_in_gig = ((np.unique(test["RAM (MB)"].values))/1024).tolist()
-  ram_counter = dict(collections.Counter(ram_sizes_in_gig))
-  print ram_counter
+    if ( group == "Engineering" ) or (group == "Engineering Canada" ):
+      for growth in Engineering_Hardware_Growth:
+        for key in ram_counter.keys():
+          ram_counter.update({key:(ram_counter[key]+ram_counter[key]*(float(growth)/100))})
+        for key in ram_counter.keys():
+          instance_cost = (ram_counter[key]*instance_prices_per_hour[key]*24*365)
+          hosting_cost.update ({key:instance_cost})
+        yearly_hosting_cost.append(sum(hosting_cost.values()))
+      cost_for_department_over_years.update({group:yearly_hosting_cost}) 
 
-  for growth in Engineering_Hardware_Growth:
-    for key in ram_counter.keys():
-      ram_counter.update({key:int(ram_counter[key]+ram_counter[key]*(float(growth)/100))})
-    for key in ram_counter.keys():
-      print key
-      print ram_counter[key]
-      print instance_prices_per_hour[key]
-      instance_cost = (ram_counter[key]*instance_prices_per_hour[key]*24*365)
-      print instance_cost
-      hosting_cost.update ({key:instance_cost})
-    print "total hosting cost each year for group "+group+str(sum(hosting_cost.values()))
-#    yearly_hosting_cost.append(sum(hosting_cost.values()))
-#  print yearly_hosting_cost
-#  print ram_counter
+    elif ( group == "Sales" ):
+      for decrease in Sales_Hardware_Decrease:
+        for key in ram_counter.keys():
+          ram_counter.update({key:(ram_counter[key]-ram_counter[key]*(float(decrease)/100))})
+        for key in ram_counter.keys():
+          instance_cost = (ram_counter[key]*instance_prices_per_hour[key]*24*365)
+          hosting_cost.update ({key:instance_cost})
+        yearly_hosting_cost.append(sum(hosting_cost.values()))
+        cost_for_department_over_years.update({group:yearly_hosting_cost}) 
 
-#for key in ram_counter.keys():
-#  print ((instance_prices_per_hour[key]*ram_counter[key]))*24*365
-
-
-#for cores in cpu_num_of_cores:
-#  ram_sizes = (worksheet[worksheet["CPU cores"]==cores].drop_duplicates(subset=["CPU cores","RAM (MB)"])["RAM (MB)"].values)
-#  ram_sizes = (ram_sizes/1024).tolist()
-#  print ram_sizes
+    else:
+      for price in range(3):
+        for key in ram_counter.keys():
+          instance_cost = (ram_counter[key]*instance_prices_per_hour[key]*24*365)
+          hosting_cost.update ({key:instance_cost})
+        yearly_hosting_cost.append(sum(hosting_cost.values()))
+        cost_for_department_over_years.update({group:yearly_hosting_cost})
+  return cost_for_department_over_years
 
 def list_of_departments():
   return departments
@@ -117,20 +115,6 @@ def num_of_cpu_and_ram_per_datacenter():
     cpu_and_ram_per_datacenter.update({dc:len(number_of_cpus)})
   return cpu_and_ram_per_datacenter
 
-def Hardware_Growth_and_Decrease():
-  num_of_cpu_and_ram_per_department()
-  for growth in Engineering_Hardware_Growth:
-    each_year_engineering_hardware_growth = (cpu_and_ram_per_department['Engineering']+((cpu_and_ram_per_department['Engineering'])*(float(growth)/100)))
-    each_year_engineering_canada_hardware_growth = (cpu_and_ram_per_department['Engineering Canada']+((cpu_and_ram_per_department['Engineering Canada'])*(float(growth)/100)))
-    each_year_total_hardware_growth = each_year_engineering_hardware_growth + each_year_engineering_canada_hardware_growth
-#    each_year_ram_growth = (cpu_and_ram_per_department['Engineering'][1]+((cpu_and_ram_per_department['Engineering'][1])*(float(growth)/100)))
-    cpu_and_ram_per_department.update({'Engineering':each_year_total_hardware_growth})
-  for decrease in Sales_Hardware_Decrease:
-    each_year_hardware_decrease = (cpu_and_ram_per_department['Sales']-((cpu_and_ram_per_department['Sales'])*(float(decrease)/100)))
-#    each_year_ram_decrease = (cpu_and_ram_per_department['Sales'][1]-((cpu_and_ram_per_department['Sales'][1])*(float(decrease)/100)))
-    cpu_and_ram_per_department.update({'Sales':each_year_hardware_decrease})
-  return cpu_and_ram_per_department
-
 def usage():
   print("""usage: %s [-g|-a|-c|-r|-d|-h] [file|-]
   -g: generates a list of all dedpartments that have hardware hosted.
@@ -141,7 +125,6 @@ def usage():
   -h: calculates hardware growth and decrease in partiular departments for upcoming years."""%sys.argv[0])
   sys.exit(2)
 
-###Start Switch cases from here....
 try:
   opts, args = getopt.getopt(sys.argv[1:],'gacrdh')
 except getopt.error as msg:
@@ -158,7 +141,7 @@ for opt, arg in opts:
   if opt == '-c': OBTAIN_CPU_RAM_PER_DEPARTMENT = 'true'
   if opt == '-r': OBTAIN_CPU_RAM_PER_APPLICATION = 'true'
   if opt == '-d': OBTAIN_CPU_RAM_PER_DATACENTER = 'true'
-  if opt == '-h': OBTAIN_HARDWARE_GROWTH_AND_DECREASE = 'true'
+  if opt == '-h': OBTAIN_HOSTING_COST_PER_DEPARTMENT = 'true'
 
 if OBTAIN_DEPARTMENTS == 'true':
   print "list of all departments that have hosted applications: %s " % str(list_of_departments())
@@ -183,11 +166,7 @@ if OBTAIN_CPU_RAM_PER_DATACENTER == 'true':
   for datacenter in cpu_and_ram_per_datacenter.keys():
     print "Total number of CPUs and RAMs used by "+datacenter+" datacenter are "+str(cpu_and_ram_per_datacenter[datacenter])
 
-if OBTAIN_HARDWARE_GROWTH_AND_DECREASE == 'true':
-  Hardware_Growth_and_Decrease()
-  print "Hardware Growth in Engineering Department after 3 years: "+str(int(cpu_and_ram_per_department['Engineering']))
-#  print "ram Growth in Engineering Department after 3 years: "+str(int(cpu_and_ram_per_department['Engineering'][1]))
-  print "Hardware decrease in Sales Department after 2 years: "+str(int(cpu_and_ram_per_department['Sales']))
-#  print "ram decrease in Engineering Department after 2 years: "+str(int(cpu_and_ram_per_department['Sales'][1]))
-
+if OBTAIN_HOSTING_COST_PER_DEPARTMENT == 'true':
+  hosting_cost_per_department()
+  print "Hosting cost for each department over the course of 3 years: "+str(cost_for_department_over_years)
 
