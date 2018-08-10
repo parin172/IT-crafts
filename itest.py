@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import pandas as pd
 import numpy as np
 import sys, getopt
@@ -32,6 +34,7 @@ Change_in_Hardware_Requirements = ["Engineering", "Engineering Canada", "Sales"]
 #yearly_hosting_cost = []
 cost_for_department_over_years = {}
 
+#assumption_for_instance_prizes in below dictionary are (0->t2.nano, 1->t2.mciro, 2->t2.small, 4->t2.medium, 8->t2.large, 16->m5.large, 24->m5.2xlarge, 32->m5.2xlarge, 64->m5.4xlarge)
 instance_prices_per_hour = {0:0.0058, 1:0.0116, 2:0.023, 4:0.0464, 8:0.0928, 16:0.192, 24:0.384, 32:0.384, 64:0.768}
 
 def hosting_cost_per_department():
@@ -41,7 +44,7 @@ def hosting_cost_per_department():
     group_worksheet = (worksheet[worksheet["Group"]==group])
     ram_sizes_in_gig = ((group_worksheet["RAM (MB)"].values)/1024).tolist()
     ram_counter = dict(collections.Counter(ram_sizes_in_gig))
-#    print ram_counter
+#   here ram_counter defines size and number rams per size used by each department.
 
     if ( group == "Engineering" ) or (group == "Engineering Canada" ):
       for growth in Engineering_Hardware_Growth:
@@ -121,7 +124,7 @@ def usage():
   -c: calculates the number of CPUs and memory used by each department.
   -r: calculates the number of CPUs and memory used by each application.
   -d: calculates the number of CPUs and memory used by each data center.
-  -h: calculates hardware hosting cost per department over the course of 3 years.."""%sys.argv[0])
+  -h: calculates hardware hosting cost per department over the course of 3 years."""%sys.argv[0])
   sys.exit(2)
 
 try:
@@ -167,5 +170,7 @@ if OBTAIN_CPU_RAM_PER_DATACENTER == 'true':
 
 if OBTAIN_HOSTING_COST_PER_DEPARTMENT == 'true':
   hosting_cost_per_department()
-  print "Hosting cost for each department over the course of 3 years: "+str(cost_for_department_over_years)
+  for department in cost_for_department_over_years.keys():
+    print "Hosting cost for "+department+" department over the course of 3 years are :"+str(cost_for_department_over_years[department])
+#  print "Hosting cost for each department over the course of 3 years: "+str(cost_for_department_over_years)
 
